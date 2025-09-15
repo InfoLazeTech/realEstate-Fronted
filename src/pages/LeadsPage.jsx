@@ -197,11 +197,14 @@ export default function LeadsPage() {
       </div>
 
       {/* Leads Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden ">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden relative ">
         <div className="overflow-x-auto relative min-h-[500px]">
-            {/* Loader overlay for filters/table */}
-     {loading && <Loader size={100} thickness={10} color="#399fac" message="" />}
-
+         {/* Loader only over table body */}
+    {loading && (
+      <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+        <Loader message="Loading leads..." />
+      </div>
+    )}
           <table className="min-w-full text-sm border-collapse">
             {/* Header */}
             <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">

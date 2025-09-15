@@ -40,13 +40,22 @@ export default function Dashboard() {
       </div>
 
       {/* Upcoming Reminders */}
-      <div className="relative bg-white p-4 shadow-md rounded-xl">
-        {loading && <Loader size={100} thickness={10} color="#399fac" message="" />}
+      <div className="relative bg-white p-4 shadow-md rounded-xl  min-h-[500px]">
+        {/* {loading && <Loader size={80} thickness={6} color="#399fac" message="" />} */}
+          {loading && (
+    <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+      <Loader message="Loading reminders..."   style={{
+              width: 2,       // wider bars
+              height: 10,     // taller bar
+            }}/>
+    </div>
+  )}
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">⏰ Upcoming Reminders</h2>
         {upcomingReminders.length === 0 ? (
           <p className="text-gray-500">No upcoming reminders.</p>
         ) : (
           <ul className="space-y-4">
+            
             {upcomingReminders
               .sort((a, b) => new Date(a.date) - new Date(b.date))
               .slice(0, 10)
