@@ -1,34 +1,39 @@
 // src/pages/LeadDetailsPage.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "../redux/axiosconfig";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { SquarePen, Trash, Loader2 } from "lucide-react";
+import LoaderWave from "./Loader";
 
+// --- Input Component ---
 const Input = ({ label, ...props }) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-sm font-medium text-gray-600">{label}</label>
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs font-medium text-gray-600">{label}</label>
     <input
-      className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 transition bg-white"
       {...props}
     />
   </div>
 );
 
+// --- TextArea Component ---
 const TextArea = ({ label, ...props }) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-sm font-medium text-gray-600">{label}</label>
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs font-medium text-gray-600">{label}</label>
     <textarea
-      className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-teal-500 transition bg-white"
       rows="3"
       {...props}
     />
   </div>
 );
 
+// --- Button Component ---
 const Button = ({ children, className = "", ...props }) => (
   <button
-    className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ${className}`}
+    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${className}`}
     {...props}
   >
     {children}
@@ -54,6 +59,14 @@ export default function LeadDetailsPage() {
   const [editingNote, setEditingNote] = useState(null);
   const [editingReminder, setEditingReminder] = useState(null);
 
+  const [loadingAction, setLoadingAction] = useState({});
+
+  const noteFormRef = useRef(null);
+  const reminderFormRef = useRef(null);
+  const noteInputRef = useRef(null);
+  const reminderInputRef = useRef(null);
+
+  // --- Fetch lead data ---
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -73,138 +86,237 @@ export default function LeadDetailsPage() {
     fetchData();
   }, [id]);
 
-  // ================= NOTES =================
+  // --- Auto-scroll & focus ---
+  useEffect(() => {
+    if (showNoteForm && noteFormRef.current) {
+      noteFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => noteInputRef.current?.focus(), 200);
+    }
+  }, [showNoteForm]);
+
+  useEffect(() => {
+    if (showReminderForm && reminderFormRef.current) {
+      reminderFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => reminderInputRef.current?.focus(), 200);
+    }
+  }, [showReminderForm]);
+
+  // --- Notes Handlers ---
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
+    setLoadingAction({ ...loadingAction, noteAdd: true });
     try {
       const res = await axios.post(`/leads/note/${id}`, { text: newNote });
       setNotes(res.data.notes);
       setNewNote("");
       setShowNoteForm(false);
-      toast.success("Note added successfully ✅");
+      toast.success("Note added ✅");
     } catch (err) {
       console.error("Error adding note", err);
       toast.error("Failed to add note ❌");
+    } finally {
+      setLoadingAction({ ...loadingAction, noteAdd: false });
     }
   };
 
   const handleUpdateNote = async (noteId, text) => {
+    setLoadingAction({ ...loadingAction, noteUpdate: noteId });
     try {
       const res = await axios.put(`/leads/note/${id}/${noteId}`, { text });
       setNotes(res.data.notes);
       setEditingNote(null);
-      toast.success("Note updated successfully ✅");
+      toast.success("Note updated ✅");
     } catch (err) {
       console.error("Error updating note", err);
       toast.error("Failed to update note ❌");
+    } finally {
+      setLoadingAction({ ...loadingAction, noteUpdate: null });
     }
   };
 
   const handleDeleteNote = async (noteId) => {
+    setLoadingAction({ ...loadingAction, noteDelete: noteId });
     try {
       const res = await axios.delete(`/leads/note/${id}/${noteId}`);
       setNotes(res.data.notes);
-      toast.success("Note deleted successfully 🗑️");
+      toast.success("Note deleted 🗑️");
     } catch (err) {
       console.error("Error deleting note", err);
       toast.error("Failed to delete note ❌");
+    } finally {
+      setLoadingAction({ ...loadingAction, noteDelete: null });
     }
   };
 
-  // ================= REMINDERS =================
+  // --- Reminder Handlers ---
   const handleAddReminder = async () => {
     if (!newReminder.date || !newReminder.message) return;
+    setLoadingAction({ ...loadingAction, reminderAdd: true });
     try {
       const res = await axios.post(`/leads/reminder/${id}`, newReminder);
       setReminders(res.data.reminders);
       setNewReminder({ date: "", message: "" });
       setShowReminderForm(false);
-      toast.success("Reminder added successfully ✅");
+      toast.success("Reminder added ✅");
     } catch (err) {
       console.error("Error adding reminder", err);
       toast.error("Failed to add reminder ❌");
+    } finally {
+      setLoadingAction({ ...loadingAction, reminderAdd: false });
     }
   };
 
   const handleUpdateReminder = async (reminderId, updated) => {
+    setLoadingAction({ ...loadingAction, reminderUpdate: reminderId });
     try {
       const res = await axios.put(`/leads/reminder/${id}/${reminderId}`, updated);
       setReminders(res.data.reminders);
       setEditingReminder(null);
-      toast.success("Reminder updated successfully ✅");
+      toast.success("Reminder updated ✅");
     } catch (err) {
       console.error("Error updating reminder", err);
       toast.error("Failed to update reminder ❌");
+    } finally {
+      setLoadingAction({ ...loadingAction, reminderUpdate: null });
     }
   };
 
   const handleDeleteReminder = async (reminderId) => {
+    setLoadingAction({ ...loadingAction, reminderDelete: reminderId });
     try {
       const res = await axios.delete(`/leads/reminder/${id}/${reminderId}`);
       setReminders(res.data.reminders);
-      toast.success("Reminder deleted successfully 🗑️");
+      toast.success("Reminder deleted 🗑️");
     } catch (err) {
       console.error("Error deleting reminder", err);
       toast.error("Failed to delete reminder ❌");
+    } finally {
+      setLoadingAction({ ...loadingAction, reminderDelete: null });
     }
   };
 
-  if (loading) return <p className="p-6">Loading...</p>;
-  if (!lead) return <p className="p-6">Lead not found</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoaderWave />
+      </div>
+    );
+  }
+  if (!lead) return <p className="p-6 text-center text-red-500 text-sm">Lead not found</p>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto bg-gray-50 min-h-screen">
-      <Link to="/leads" className="text-blue-600 hover:underline">
-        ← Back to Leads
-      </Link>
+    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Back Link */}
+        <Link
+          to="/leads"
+          className="inline-flex items-center text-teal-600 hover:text-teal-800 transition mb-4 text-sm"
+        >
+          <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Leads
+        </Link>
 
-      {/* Lead Info */}
-      <div className="bg-white p-8 rounded-xl shadow-lg mt-6">
-        <h1 className="text-4xl font-bold text-gray-800 mb-6">{lead.name}</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700 text-lg">
-          <p>💰 <strong>Budget:</strong> {lead.budget}</p>
-          <p>📍 <strong>Location:</strong> {lead.location}</p>
-          <p>🔥 <strong>Score:</strong> {lead.score}</p>
-          <p>📊 <strong>Stage:</strong> {lead.stage}</p>
-          <p>⚡ <strong>Priority:</strong> {lead.priority}</p>
-        </div>
+        {/* Lead Info Card */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{lead.name}</h1>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-gray-600 text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-teal-500">💰</span>
+              <div>
+                <p className="text-xs font-medium">Budget</p>
+                <p>{lead.budget}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-teal-500">📍</span>
+              <div>
+                <p className="text-xs font-medium">Location</p>
+                <p>{lead.location}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-teal-500">🔥</span>
+              <div>
+                <p className="text-xs font-medium">Score</p>
+                <p>{lead.score}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-teal-500">📊</span>
+              <div>
+                <p className="text-xs font-medium">Stage</p>
+                <p>{lead.stage}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-teal-500">⚡</span>
+              <div>
+                <p className="text-xs font-medium">Priority</p>
+                <p>{lead.priority}</p>
+              </div>
+            </div>
+          </div>
 
-        {/* Action Buttons */}
-        <div className="mt-6 flex gap-3">
-          <Button onClick={() => setShowNoteForm(!showNoteForm)}>
-            {showNoteForm ? "Close Note Form" : "Add Note"}
-          </Button>
-          <Button onClick={() => setShowReminderForm(!showReminderForm)}>
-            {showReminderForm ? "Close Reminder Form" : "Add Reminder"}
-          </Button>
+          {/* Action Buttons */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              onClick={() => setShowNoteForm(!showNoteForm)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {showNoteForm ? "Close" : "+ Add Note"}
+            </Button>
+            <Button
+              onClick={() => setShowReminderForm(!showReminderForm)}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              {showReminderForm ? "Close" : "+ Add Reminder"}
+            </Button>
+          </div>
         </div>
 
         {/* Add Note Form */}
         {showNoteForm && (
-          <div className="mt-6">
+          <div ref={noteFormRef} className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Add Note</h2>
             <TextArea
-              label="New Note"
+              ref={noteInputRef}
+              label="Note"
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
             />
-            <div className="mt-2">
-              <Button onClick={handleAddNote}>Save Note</Button>
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={handleAddNote}
+                disabled={loadingAction.noteAdd}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                {loadingAction.noteAdd && <Loader2 className="animate-spin w-4 h-4 mr-1 inline" />}
+                Save
+              </Button>
+              <Button
+                onClick={() => setShowNoteForm(false)}
+                className="bg-gray-500 hover:bg-gray-600 text-white"
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         )}
 
         {/* Notes List */}
-        {notes.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-3 text-gray-800">📝 Notes</h2>
+        {Array.isArray(notes) && notes.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">📝 Notes</h2>
             <ul className="space-y-3">
               {notes.map((note) => (
                 <li
                   key={note._id}
-                  className="bg-gray-100 p-3 rounded-lg shadow-sm border flex justify-between items-start"
+                  className="border border-gray-100 rounded-md p-3 hover:bg-gray-50 transition text-sm flex justify-between items-start"
                 >
                   {editingNote === note._id ? (
-                    <div className="flex-1 mr-3">
+                    <div className="flex flex-col gap-3 w-full">
                       <TextArea
                         value={note.text}
                         onChange={(e) =>
@@ -215,10 +327,19 @@ export default function LeadDetailsPage() {
                           )
                         }
                       />
-                      <div className="mt-2 flex gap-2">
-                        <Button onClick={() => handleUpdateNote(note._id, note.text)}>Save</Button>
+                      <div className="flex gap-2">
                         <Button
-                          className="bg-gray-500 hover:bg-gray-600"
+                          onClick={() => handleUpdateNote(note._id, note.text)}
+                          disabled={loadingAction.noteUpdate === note._id}
+                          className="bg-teal-600 hover:bg-teal-700 text-white"
+                        >
+                          {loadingAction.noteUpdate === note._id && (
+                            <Loader2 className="animate-spin w-4 h-4 mr-1 inline" />
+                          )}
+                          Save
+                        </Button>
+                        <Button
+                          className="bg-gray-500 hover:bg-gray-600 text-white"
                           onClick={() => setEditingNote(null)}
                         >
                           Cancel
@@ -227,24 +348,30 @@ export default function LeadDetailsPage() {
                     </div>
                   ) : (
                     <>
-                      {/* Only this div is clickable for navigation */}
-                      <div
-                        className="flex-1 cursor-pointer"
-                        onClick={() => navigate(`/note/${note._id}`)}
-                      >
-                        <p className="text-gray-700">{note.text}</p>
+                      <div className="flex-1 cursor-pointer" onClick={() => navigate(`/note/${note._id}`)}>
+                        <p className="text-gray-800">{note.text}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Added on: {new Date(note.createdAt).toLocaleString()}
+                          {new Date(note.createdAt).toLocaleString()}
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={() => setEditingNote(note._id)}>Edit</Button>
-                        <Button
-                          className="bg-red-600 hover:bg-red-700"
-                          onClick={() => handleDeleteNote(note._id)}
+                        <button
+                          className="text-blue-600 hover:text-blue-800"
+                          onClick={() => setEditingNote(note._id)}
                         >
-                          Delete
-                        </Button>
+                          <SquarePen size={18} />
+                        </button>
+                        <button
+                          className="text-red-600 hover:text-red-800"
+                          onClick={() => handleDeleteNote(note._id)}
+                          disabled={loadingAction.noteDelete === note._id}
+                        >
+                          {loadingAction.noteDelete === note._id ? (
+                            <Loader2 className="animate-spin w-4 h-4 inline" />
+                          ) : (
+                            <Trash size={18} />
+                          )}
+                        </button>
                       </div>
                     </>
                   )}
@@ -256,61 +383,89 @@ export default function LeadDetailsPage() {
 
         {/* Add Reminder Form */}
         {showReminderForm && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Input
-              label="Reminder Date"
-              type="datetime-local"
-              value={newReminder.date}
-              onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })}
-            />
-            <Input
-              label="Message"
-              value={newReminder.message}
-              onChange={(e) => setNewReminder({ ...newReminder, message: e.target.value })}
-            />
-            <div className="flex items-end">
-              <Button onClick={handleAddReminder}>Save Reminder</Button>
+          <div ref={reminderFormRef} className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Add Reminder</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                ref={reminderInputRef}
+                label="Date"
+                type="datetime-local"
+                value={newReminder.date}
+                onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })}
+              />
+              <Input
+                label="Message"
+                value={newReminder.message}
+                onChange={(e) => setNewReminder({ ...newReminder, message: e.target.value })}
+              />
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={handleAddReminder}
+                disabled={loadingAction.reminderAdd}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                {loadingAction.reminderAdd && <Loader2 className="animate-spin w-4 h-4 mr-1 inline" />}
+                Save
+              </Button>
+              <Button
+                onClick={() => setShowReminderForm(false)}
+                className="bg-gray-500 hover:bg-gray-600 text-white"
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         )}
 
         {/* Reminders List */}
-        {reminders.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-3 text-gray-800">⏰ Reminders</h2>
+        {Array.isArray(reminders) && reminders.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">⏰ Reminders</h2>
             <ul className="space-y-3">
               {reminders.map((reminder) => (
                 <li
                   key={reminder._id}
-                  className="bg-yellow-50 p-3 rounded-lg shadow-sm border flex justify-between items-start"
+                  className="border border-gray-100 rounded-md p-3 hover:bg-amber-50 transition text-sm flex justify-between items-start"
                 >
                   {editingReminder === reminder._id ? (
-                    <div className="flex-1 mr-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <Input
-                        value={reminder.date.slice(0, 16)}
-                        type="datetime-local"
-                        onChange={(e) =>
-                          setReminders((prev) =>
-                            prev.map((r) =>
-                              r._id === reminder._id ? { ...r, date: e.target.value } : r
+                    <div className="flex flex-col gap-3 w-full">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Input
+                          type="datetime-local"
+                          value={reminder.date.slice(0, 16)}
+                          onChange={(e) =>
+                            setReminders((prev) =>
+                              prev.map((r) =>
+                                r._id === reminder._id ? { ...r, date: e.target.value } : r
+                              )
                             )
-                          )
-                        }
-                      />
-                      <Input
-                        value={reminder.message}
-                        onChange={(e) =>
-                          setReminders((prev) =>
-                            prev.map((r) =>
-                              r._id === reminder._id ? { ...r, message: e.target.value } : r
+                          }
+                        />
+                        <Input
+                          value={reminder.message}
+                          onChange={(e) =>
+                            setReminders((prev) =>
+                              prev.map((r) =>
+                                r._id === reminder._id ? { ...r, message: e.target.value } : r
+                              )
                             )
-                          )
-                        }
-                      />
-                      <div className="col-span-2 flex gap-2 mt-2">
-                        <Button onClick={() => handleUpdateReminder(reminder._id, reminder)}>Save</Button>
+                          }
+                        />
+                      </div>
+                      <div className="flex gap-2">
                         <Button
-                          className="bg-gray-500 hover:bg-gray-600"
+                          onClick={() => handleUpdateReminder(reminder._id, reminder)}
+                          disabled={loadingAction.reminderUpdate === reminder._id}
+                          className="bg-teal-600 hover:bg-teal-700 text-white"
+                        >
+                          {loadingAction.reminderUpdate === reminder._id && (
+                            <Loader2 className="animate-spin w-4 h-4 mr-1 inline" />
+                          )}
+                          Save
+                        </Button>
+                        <Button
+                          className="bg-gray-500 hover:bg-gray-600 text-white"
                           onClick={() => setEditingReminder(null)}
                         >
                           Cancel
@@ -319,24 +474,33 @@ export default function LeadDetailsPage() {
                     </div>
                   ) : (
                     <>
-                      {/* Only this div is clickable for navigation */}
                       <div
                         className="flex-1 cursor-pointer"
                         onClick={() => navigate(`/reminder/${reminder._id}`)}
                       >
-                        <p className="text-gray-700">{reminder.message}</p>
+                        <p className="text-gray-800">{reminder.message}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Scheduled for: {new Date(reminder.date).toLocaleString()}
+                          {new Date(reminder.date).toLocaleString()}
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={() => setEditingReminder(reminder._id)}>Edit</Button>
-                        <Button
-                          className="bg-red-600 hover:bg-red-700"
-                          onClick={() => handleDeleteReminder(reminder._id)}
+                        <button
+                          className="text-blue-600 hover:text-blue-800"
+                          onClick={() => setEditingReminder(reminder._id)}
                         >
-                          Delete
-                        </Button>
+                          <SquarePen size={18} />
+                        </button>
+                        <button
+                          className="text-red-600 hover:text-red-800"
+                          onClick={() => handleDeleteReminder(reminder._id)}
+                          disabled={loadingAction.reminderDelete === reminder._id}
+                        >
+                          {loadingAction.reminderDelete === reminder._id ? (
+                            <Loader2 className="animate-spin w-4 h-4 inline" />
+                          ) : (
+                            <Trash size={18} />
+                          )}
+                        </button>
                       </div>
                     </>
                   )}
