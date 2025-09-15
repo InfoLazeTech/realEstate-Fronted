@@ -1,7 +1,9 @@
 // src/pages/LeadDetailsPage.jsx
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "../redux/axiosconfig";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Input = ({ label, ...props }) => (
   <div className="flex flex-col gap-1">
@@ -35,6 +37,8 @@ const Button = ({ children, className = "", ...props }) => (
 
 export default function LeadDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +51,9 @@ export default function LeadDetailsPage() {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [showReminderForm, setShowReminderForm] = useState(false);
 
+  const [editingNote, setEditingNote] = useState(null);
+  const [editingReminder, setEditingReminder] = useState(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -58,6 +65,7 @@ export default function LeadDetailsPage() {
         setReminders(remindersRes.data || []);
       } catch (err) {
         console.error("Error loading lead details", err);
+        toast.error("Failed to load lead details ❌");
       } finally {
         setLoading(false);
       }
@@ -65,6 +73,7 @@ export default function LeadDetailsPage() {
     fetchData();
   }, [id]);
 
+  // ================= NOTES =================
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     try {
@@ -72,11 +81,37 @@ export default function LeadDetailsPage() {
       setNotes(res.data.notes);
       setNewNote("");
       setShowNoteForm(false);
+      toast.success("Note added successfully ✅");
     } catch (err) {
       console.error("Error adding note", err);
+      toast.error("Failed to add note ❌");
     }
   };
 
+  const handleUpdateNote = async (noteId, text) => {
+    try {
+      const res = await axios.put(`/leads/note/${id}/${noteId}`, { text });
+      setNotes(res.data.notes);
+      setEditingNote(null);
+      toast.success("Note updated successfully ✅");
+    } catch (err) {
+      console.error("Error updating note", err);
+      toast.error("Failed to update note ❌");
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    try {
+      const res = await axios.delete(`/leads/note/${id}/${noteId}`);
+      setNotes(res.data.notes);
+      toast.success("Note deleted successfully 🗑️");
+    } catch (err) {
+      console.error("Error deleting note", err);
+      toast.error("Failed to delete note ❌");
+    }
+  };
+
+  // ================= REMINDERS =================
   const handleAddReminder = async () => {
     if (!newReminder.date || !newReminder.message) return;
     try {
@@ -84,8 +119,33 @@ export default function LeadDetailsPage() {
       setReminders(res.data.reminders);
       setNewReminder({ date: "", message: "" });
       setShowReminderForm(false);
+      toast.success("Reminder added successfully ✅");
     } catch (err) {
       console.error("Error adding reminder", err);
+      toast.error("Failed to add reminder ❌");
+    }
+  };
+
+  const handleUpdateReminder = async (reminderId, updated) => {
+    try {
+      const res = await axios.put(`/leads/reminder/${id}/${reminderId}`, updated);
+      setReminders(res.data.reminders);
+      setEditingReminder(null);
+      toast.success("Reminder updated successfully ✅");
+    } catch (err) {
+      console.error("Error updating reminder", err);
+      toast.error("Failed to update reminder ❌");
+    }
+  };
+
+  const handleDeleteReminder = async (reminderId) => {
+    try {
+      const res = await axios.delete(`/leads/reminder/${id}/${reminderId}`);
+      setReminders(res.data.reminders);
+      toast.success("Reminder deleted successfully 🗑️");
+    } catch (err) {
+      console.error("Error deleting reminder", err);
+      toast.error("Failed to delete reminder ❌");
     }
   };
 
@@ -138,15 +198,56 @@ export default function LeadDetailsPage() {
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-3 text-gray-800">📝 Notes</h2>
             <ul className="space-y-3">
-              {notes.map((note, index) => (
+              {notes.map((note) => (
                 <li
-                  key={index}
-                  className="bg-gray-100 p-3 rounded-lg shadow-sm border border-gray-200"
+                  key={note._id}
+                  className="bg-gray-100 p-3 rounded-lg shadow-sm border flex justify-between items-start"
                 >
-                  <p className="text-gray-700">{note.text}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Added on: {new Date(note.date || note.createdAt).toLocaleString()}
-                  </p>
+                  {editingNote === note._id ? (
+                    <div className="flex-1 mr-3">
+                      <TextArea
+                        value={note.text}
+                        onChange={(e) =>
+                          setNotes((prev) =>
+                            prev.map((n) =>
+                              n._id === note._id ? { ...n, text: e.target.value } : n
+                            )
+                          )
+                        }
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <Button onClick={() => handleUpdateNote(note._id, note.text)}>Save</Button>
+                        <Button
+                          className="bg-gray-500 hover:bg-gray-600"
+                          onClick={() => setEditingNote(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Only this div is clickable for navigation */}
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => navigate(`/note/${note._id}`)}
+                      >
+                        <p className="text-gray-700">{note.text}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Added on: {new Date(note.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => setEditingNote(note._id)}>Edit</Button>
+                        <Button
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() => handleDeleteNote(note._id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -160,16 +261,12 @@ export default function LeadDetailsPage() {
               label="Reminder Date"
               type="datetime-local"
               value={newReminder.date}
-              onChange={(e) =>
-                setNewReminder({ ...newReminder, date: e.target.value })
-              }
+              onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })}
             />
             <Input
               label="Message"
               value={newReminder.message}
-              onChange={(e) =>
-                setNewReminder({ ...newReminder, message: e.target.value })
-              }
+              onChange={(e) => setNewReminder({ ...newReminder, message: e.target.value })}
             />
             <div className="flex items-end">
               <Button onClick={handleAddReminder}>Save Reminder</Button>
@@ -182,16 +279,67 @@ export default function LeadDetailsPage() {
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-3 text-gray-800">⏰ Reminders</h2>
             <ul className="space-y-3">
-              {reminders.map((reminder, index) => (
+              {reminders.map((reminder) => (
                 <li
-                  key={index}
-                  className="bg-yellow-50 p-3 rounded-lg shadow-sm border border-yellow-200"
+                  key={reminder._id}
+                  className="bg-yellow-50 p-3 rounded-lg shadow-sm border flex justify-between items-start"
                 >
-                  <p className="text-gray-700">{reminder.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Scheduled for:{" "}
-                    {new Date(reminder.date).toLocaleString()}
-                  </p>
+                  {editingReminder === reminder._id ? (
+                    <div className="flex-1 mr-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <Input
+                        value={reminder.date.slice(0, 16)}
+                        type="datetime-local"
+                        onChange={(e) =>
+                          setReminders((prev) =>
+                            prev.map((r) =>
+                              r._id === reminder._id ? { ...r, date: e.target.value } : r
+                            )
+                          )
+                        }
+                      />
+                      <Input
+                        value={reminder.message}
+                        onChange={(e) =>
+                          setReminders((prev) =>
+                            prev.map((r) =>
+                              r._id === reminder._id ? { ...r, message: e.target.value } : r
+                            )
+                          )
+                        }
+                      />
+                      <div className="col-span-2 flex gap-2 mt-2">
+                        <Button onClick={() => handleUpdateReminder(reminder._id, reminder)}>Save</Button>
+                        <Button
+                          className="bg-gray-500 hover:bg-gray-600"
+                          onClick={() => setEditingReminder(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Only this div is clickable for navigation */}
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => navigate(`/reminder/${reminder._id}`)}
+                      >
+                        <p className="text-gray-700">{reminder.message}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Scheduled for: {new Date(reminder.date).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => setEditingReminder(reminder._id)}>Edit</Button>
+                        <Button
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() => handleDeleteReminder(reminder._id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -201,4 +349,3 @@ export default function LeadDetailsPage() {
     </div>
   );
 }
-

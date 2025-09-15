@@ -72,6 +72,56 @@ export const addReminder = createAsyncThunk(
         }
     }
 );
+
+export const editReminder = createAsyncThunk(
+    "leads/editReminder",
+    async ({ leadId, reminderId, reminder }, { rejectWithValue }) => {
+        try {
+            const res = await axios.put(`/leads/reminder/${leadId}/${reminderId}`, reminder);
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.error || err.message);
+        }
+    }
+);
+
+export const deleteReminder = createAsyncThunk(
+    "leads/deleteReminder",
+    async ({ leadId, reminderId }, { rejectWithValue }) => {
+        try {
+            const res = await axios.delete(`/leads/reminder/${leadId}/${reminderId}`);
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.error || err.message);
+        }
+    }
+);
+
+// NOTES
+// ======================
+export const editNote = createAsyncThunk(
+    "leads/editNote",
+    async ({ leadId, noteId, note }, { rejectWithValue }) => {
+        try {
+            const res = await axios.put(`/leads/note/${leadId}/${noteId}`, note);
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.error || err.message);
+        }
+    }
+);
+export const deleteNote = createAsyncThunk(
+    "leads/deleteNote",
+    async ({ leadId, noteId }, { rejectWithValue }) => {
+        try {
+            const res = await axios.delete(`/leads/note/${leadId}/${noteId}`);
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.error || err.message);
+        }
+    }
+);
+
 export const getSingleLead = createAsyncThunk(
     "leads/getSingle",
     async (id, { rejectWithValue }) => {
@@ -153,6 +203,39 @@ const leadSlice = createSlice({
                 );
             })
             .addCase(addReminder.rejected, (state, action) => {
+                state.error = action.payload;
+            })
+            //edit reminder
+            .addCase(editReminder.fulfilled, (state, action) => {
+                const updated = action.payload;
+                state.items = state.items.map((lead) => (lead._id === updated._id ? updated : lead));
+            })
+            .addCase(editReminder.rejected, (state, action) => {
+                state.error = action.payload;
+            })
+
+            .addCase(deleteReminder.fulfilled, (state, action) => {
+                const updated = action.payload;
+                state.items = state.items.map((lead) => (lead._id === updated._id ? updated : lead));
+            })
+            .addCase(deleteReminder.rejected, (state, action) => {
+                state.error = action.payload;
+            })
+            // Notes
+            // ======================
+            .addCase(editNote.fulfilled, (state, action) => {
+                const updated = action.payload;
+                state.items = state.items.map((lead) => (lead._id === updated._id ? updated : lead));
+            })
+            .addCase(editNote.rejected, (state, action) => {
+                state.error = action.payload;
+            })
+            .addCase(deleteNote.fulfilled, (state, action) => {
+                const updated = action.payload;
+                state.items = state.items.map((lead) => (lead._id === updated._id ? updated : lead));
+            })
+
+            .addCase(deleteNote.rejected, (state, action) => {
                 state.error = action.payload;
             })
             // Update Lead
