@@ -2,22 +2,38 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import { addReminder, getSingleLead } from "../redux/feature/leadSlice";
-import { Clock, PlusCircle, BellOff, Loader2, Search } from "lucide-react";
+import {
+  Clock,
+  PlusCircle,
+  BellOff,
+  Loader2,
+  Search,
+  Trash2,
+} from "lucide-react";
 
 const Button = ({ children, className = "", ...props }) => (
   <button
-    className={`flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:from-blue-600 hover:to-blue-700 active:scale-95 transition ${className}`}
+    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm 
+      bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium 
+      hover:from-blue-600 hover:to-blue-700 active:scale-95 transition ${className}`}
     {...props}
   >
     {children}
   </button>
 );
 
-const Input = ({ className = "", ...props }) => (
-  <input
-    className={`border-b-2 border-gray-300 focus:border-blue-500 px-2 py-1 bg-transparent w-full outline-none transition ${className}`}
-    {...props}
-  />
+const Input = ({ label, className = "", ...props }) => (
+  <div className="flex flex-col gap-0.5 flex-1">
+    {label && (
+      <label className="text-xs font-medium text-gray-600">{label}</label>
+    )}
+    <input
+      className={`border border-gray-300 rounded-md px-2 py-1.5 text-sm 
+        bg-white shadow-sm focus:ring-2 focus:ring-blue-500 
+        focus:outline-none transition ${className}`}
+      {...props}
+    />
+  </div>
 );
 
 export default function RemindersPage() {
@@ -28,7 +44,6 @@ export default function RemindersPage() {
   const [reminderData, setReminderData] = useState({ date: "", message: "" });
   const [leadReminders, setLeadReminders] = useState([]);
 
-  // Fetch reminders when clicking Search icon
   const handleSearchLead = () => {
     if (!selectedLead) return;
     dispatch(getSingleLead(selectedLead))
@@ -37,7 +52,6 @@ export default function RemindersPage() {
       .catch(() => setLeadReminders([]));
   };
 
-  // Add reminder handler
   const handleAddReminder = () => {
     if (!selectedLead || !reminderData.date || !reminderData.message) return;
     dispatch(addReminder({ id: selectedLead, reminder: reminderData }))
@@ -49,110 +63,128 @@ export default function RemindersPage() {
   };
 
   return (
-    <div className="p-6 flex-1 space-y-10">
-      {/* Page Title */}
+    <div className="p-4 flex-1 space-y-6 max-w-4xl mx-auto">
+      {/* Title */}
       <div>
-        <h2 className="text-4xl font-bold flex items-center gap-3 text-gray-800">
-          <Clock className="text-blue-600" size={36} /> Reminders
+        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+          <Clock className="text-blue-600" size={26} /> Reminders
         </h2>
-        <div className="h-1 w-28 bg-gradient-to-r from-blue-500 to-blue-600 mt-2 rounded-full"></div>
+        <div className="h-0.5 w-24 bg-gradient-to-r from-blue-500 to-blue-600 mt-1 rounded-full"></div>
       </div>
 
-      {/* Reminder Input Section */}
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        {/* Lead Select with Search icon */}
-        <div className="flex-1 relative">
-          <select
-            value={selectedLead}
-            onChange={(e) => setSelectedLead(e.target.value)}
-            className="border-b-2 border-gray-300 focus:border-blue-500 px-2 py-2 bg-transparent w-full outline-none transition pr-10"
-          >
-            <option value="">Select Lead</option>
-            {leads.map((lead) => (
-              <option key={lead._id} value={lead._id}>
-                {lead.name}
-              </option>
-            ))}
-          </select>
-          <Search
-            size={20}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 cursor-pointer hover:text-blue-800 transition"
-            onClick={handleSearchLead}
-          />
-        </div>
+      {/* Create Reminder */}
+      <div className="bg-white shadow rounded-lg p-4 flex flex-col gap-4">
+        <h3 className="text-base font-semibold text-gray-800 border-b pb-1">
+          Create Reminder
+        </h3>
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          {/* Lead select */}
+          <div className="flex-1 relative">
+            <label className="text-xs font-medium text-gray-600">
+              Select Lead
+            </label>
+            <select
+              value={selectedLead}
+              onChange={(e) => setSelectedLead(e.target.value)}
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-sm w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none pr-8"
+            >
+              <option value="">Choose Lead</option>
+              {leads.map((lead) => (
+                <option key={lead._id} value={lead._id}>
+                  {lead.name}
+                </option>
+              ))}
+            </select>
+            <Search
+              size={16}
+              className="absolute right-5 bottom-2.5 text-blue-600 cursor-pointer hover:text-blue-800 transition"
+              onClick={handleSearchLead}
+            />
+          </div>
 
-        {/* Date input */}
-        <div className="flex-1">
+          {/* Date */}
           <Input
+            label="Date"
             type="datetime-local"
             value={reminderData.date}
             onChange={(e) =>
               setReminderData({ ...reminderData, date: e.target.value })
             }
           />
-        </div>
 
-        {/* Message input */}
-        <div className="flex-1">
+          {/* Message */}
           <Input
-            placeholder="Message"
+            label="Message"
+            placeholder="Enter message"
             value={reminderData.message}
             onChange={(e) =>
               setReminderData({ ...reminderData, message: e.target.value })
             }
           />
-        </div>
 
-        {/* Add Reminder button */}
-        <Button onClick={handleAddReminder}>
-          <PlusCircle size={18} /> Add
-        </Button>
+          {/* Add */}
+          <div className="flex items-end mt-5 md:mt-5">
+            <Button onClick={handleAddReminder}>
+              <PlusCircle size={16} /> Add
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Reminders Table */}
-      {loading ? (
-        <div className="flex items-center justify-center gap-2 text-gray-500">
-          <Loader2 className="animate-spin" /> Loading...
-        </div>
-      ) : !selectedLead ? (
-        <div className="flex items-center justify-center gap-2 text-gray-500">
-          <BellOff /> Please select a lead and click the search icon.
-        </div>
-      ) : leadReminders.length === 0 ? (
-        <div className="flex items-center justify-center gap-2 text-gray-500">
-          <BellOff /> No reminders for this lead.
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
-            <thead className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-              <tr>
-                <th className="px-4 py-2 text-left">Message</th>
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Notified</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...leadReminders]
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .map((r) => (
-                  <tr
-                    key={r._id}
-                    className="even:bg-gray-50 odd:bg-white hover:bg-blue-50 transition"
-                  >
-                    <td className="px-4 py-3">{r.message}</td>
-                    <td className="px-4 py-3">
+      {/* List */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <h3 className="text-base font-semibold text-gray-800 border-b pb-1 mb-3">
+          Lead Reminders
+        </h3>
+
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 text-gray-500 py-8 text-sm">
+            <Loader2 className="animate-spin" size={16} /> Loading...
+          </div>
+        ) : !selectedLead ? (
+          <div className="flex items-center justify-center gap-2 text-gray-500 py-8 text-sm">
+            <BellOff size={16} /> Please select a lead and click search.
+          </div>
+        ) : leadReminders.length === 0 ? (
+          <div className="flex items-center justify-center gap-2 text-gray-500 py-8 text-sm">
+            <BellOff size={16} /> No reminders for this lead.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {[...leadReminders]
+              .sort((a, b) => new Date(a.date) - new Date(b.date))
+              .map((r) => (
+                <div
+                  key={r._id}
+                  className="flex items-center justify-between bg-blue-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition"
+                >
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">
+                      {r.message}
+                    </p>
+                    <p className="text-xs text-gray-600">
                       {new Date(r.date).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      {r.notified ? "✅ Yes" : "❌ No"}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        r.notified
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {r.notified ? "Notified" : "Pending"}
+                    </span>
+                    <button className="text-red-500 hover:text-red-700">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
