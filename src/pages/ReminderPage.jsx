@@ -1,7 +1,7 @@
 // src/pages/RemindersPage.jsx
 import { useSelector, useDispatch } from "react-redux";
-import { useState } from "react";
-import { addReminder, getSingleLead } from "../redux/feature/leadSlice";
+import { useState, useEffect } from "react";
+import { addReminder, getSingleLead, fetchLeads } from "../redux/feature/leadSlice";
 import {
   Clock,
   PlusCircle,
@@ -38,18 +38,28 @@ const Input = ({ label, className = "", ...props }) => (
 
 export default function RemindersPage() {
   const dispatch = useDispatch();
-  const { items: leads, loading } = useSelector((state) => state.leads);
+  const { allItems: leads, loading } = useSelector((state) => state.leads);
 
   const [selectedLead, setSelectedLead] = useState("");
   const [reminderData, setReminderData] = useState({ date: "", message: "" });
   const [leadReminders, setLeadReminders] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // ✅ Always fetch full leads list (ignore filters from LeadsPage)
+  useEffect(() => {
+    if (!leads || leads.length === 0) {
+      dispatch(fetchLeads()); // no filters -> pure leads
+    }
+  }, [dispatch]);
 
   const handleSearchLead = () => {
     if (!selectedLead) return;
+    setHasSearched(true);
     dispatch(getSingleLead(selectedLead))
       .unwrap()
       .then((lead) => setLeadReminders(lead.reminders || []))
-      .catch(() => setLeadReminders([]));
+      .catch(() => setLeadReminders(null));
   };
 
   const handleAddReminder = () => {
@@ -78,28 +88,69 @@ export default function RemindersPage() {
           Create Reminder
         </h3>
         <div className="flex flex-col md:flex-row items-center gap-3">
-          {/* Lead select */}
+          {/* Lead Search */}
           <div className="flex-1 relative">
             <label className="text-xs font-medium text-gray-600">
-              Select Lead
+              Search Lead
             </label>
-            <select
-              value={selectedLead}
-              onChange={(e) => setSelectedLead(e.target.value)}
-              className="border border-gray-300 rounded-md px-2 py-1.5 text-sm w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none pr-8"
-            >
-              <option value="">Choose Lead</option>
-              {leads.map((lead) => (
-                <option key={lead._id} value={lead._id}>
-                  {lead.name}
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={
+                selectedLead
+                  ? leads.find((l) => l._id === selectedLead)?.name || ""
+                  : searchQuery
+              }
+              onChange={(e) => {
+                setSelectedLead(""); 
+                setSearchQuery(e.target.value);
+                setHasSearched(false);
+              }}
+              placeholder="Type lead name..."
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-sm w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
             <Search
               size={16}
-              className="absolute right-5 bottom-2.5 text-blue-600 cursor-pointer hover:text-blue-800 transition"
+              className="absolute right-6 bottom-2.5 text-blue-600 cursor-pointer hover:text-blue-800 transition"
               onClick={handleSearchLead}
             />
+            {/* Cancel Icon */}
+            {(searchQuery || selectedLead) && (
+              <button
+                className="absolute right-2 bottom-1.5 text-gray-500 hover:text-red-600"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedLead("");
+                  setLeadReminders([]);
+                  setHasSearched(false);
+                }}
+              >
+                ✕
+              </button>
+            )}
+
+            {/* Suggestions */}
+            {searchQuery && !selectedLead && (
+              <div className="absolute z-10 bg-white border border-gray-200 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
+                {leads
+                  .filter((lead) =>
+                    lead.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((lead) => (
+                    <div
+                      key={lead._id}
+                      className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedLead(lead._id);
+                        setSearchQuery(""); 
+                        setHasSearched(true); 
+                        handleSearchLead();
+                      }}
+                    >
+                      {lead.name}
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
           {/* Date */}
@@ -141,9 +192,13 @@ export default function RemindersPage() {
           <div className="flex items-center justify-center gap-2 text-gray-500 py-8 text-sm">
             <Loader2 className="animate-spin" size={16} /> Loading...
           </div>
-        ) : !selectedLead ? (
+        ) : !hasSearched ? (
           <div className="flex items-center justify-center gap-2 text-gray-500 py-8 text-sm">
-            <BellOff size={16} /> Please select a lead and click search.
+            <BellOff size={16} /> Please search and select a lead.
+          </div>
+        ) : leadReminders === null ? (
+          <div className="flex items-center justify-center gap-2 text-gray-500 py-8 text-sm">
+            <BellOff size={16} /> Lead not found.
           </div>
         ) : leadReminders.length === 0 ? (
           <div className="flex items-center justify-center gap-2 text-gray-500 py-8 text-sm">
