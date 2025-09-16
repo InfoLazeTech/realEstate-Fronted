@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createLead } from "../redux/feature/leadSlice";
 import { User, DollarSign, MapPin, Star, Workflow, Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
 
 const Input = ({ label, icon: Icon, ...props }) => (
   <div className="flex flex-col gap-1">
@@ -56,9 +57,10 @@ export default function AddLeadPage() {
     setLoading(true);
     try {
       await dispatch(createLead(formData)).unwrap();
+       toast.success("Lead created successfully! 🎉"); 
       navigate("/leads");
     } catch (err) {
-      alert("Error creating lead: " + err);
+      toast.error("❌ Failed to create lead: " + err);
     } finally {
       setLoading(false);
     }

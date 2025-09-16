@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { getSingleLead, updateLead } from "../redux/feature/leadSlice";
 import { Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
 
 const Input = ({ label, ...props }) => (
   <div className="flex flex-col gap-1">
@@ -71,9 +72,11 @@ export default function EditLeadPage() {
     setLoading(true);
     try {
       await dispatch(updateLead({ id, lead: formData })).unwrap();
+      toast.success(" Lead updated successfully!");
       navigate("/leads");
     } catch (err) {
-      alert("Error updating lead: " + JSON.stringify(err));
+
+      toast.error("Failed to update lead: " + err);
     } finally {
       setLoading(false);
     }

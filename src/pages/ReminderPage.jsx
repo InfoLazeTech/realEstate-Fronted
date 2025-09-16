@@ -1,7 +1,7 @@
 // src/pages/RemindersPage.jsx
 import { useSelector, useDispatch } from "react-redux";
 import { useState, useEffect } from "react";
-import { addReminder, getSingleLead, fetchLeads } from "../redux/feature/leadSlice";
+import { addReminder, getSingleLead, fetchLeads, deleteReminder } from "../redux/feature/leadSlice";
 import {
   Clock,
   PlusCircle,
@@ -10,7 +10,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-
+import { toast } from "react-toastify";
 const Button = ({ children, className = "", ...props }) => (
   <button
     className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm 
@@ -69,8 +69,49 @@ export default function RemindersPage() {
       .then((updatedLead) => {
         setLeadReminders(updatedLead.reminders || []);
         setReminderData({ date: "", message: "" });
+             // Toast for creation
+      toast.success("Reminder added ✅", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
+      })
+      .catch(() => {
+      toast.error("Failed to add reminder ❌", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    });
   };
+const handleDeleteReminder = (reminderId) => {
+  if (!selectedLead) return;
+
+  dispatch(deleteReminder({ leadId: selectedLead, reminderId }))
+    .unwrap()
+    .then((updatedLead) => {
+      setLeadReminders(updatedLead.reminders || []);
+
+      toast.success("Reminder deleted 🗑️", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    })
+    .catch(() => {
+      toast.error("Failed to delete reminder ❌", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    });
+};
+
+
 
   return (
     <div className="p-4 flex-1 space-y-6 max-w-4xl mx-auto">
@@ -231,8 +272,9 @@ export default function RemindersPage() {
                     >
                       {r.notified ? "Notified" : "Pending"}
                     </span>
-                    <button className="text-red-500 hover:text-red-700">
+                    <button className="text-red-500 hover:text-red-700"   onClick={() => handleDeleteReminder(r._id)}>
                       <Trash2 size={16} />
+                    
                     </button>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 // src/components/Sidebar.jsx
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Users, Bell, PanelRightOpen, PanelLeftClose } from "lucide-react";
+import { Home, Users, Bell, PanelRightOpen, PanelLeftClose,ChevronLeft, ChevronRight, Menu } from "lucide-react";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -23,7 +23,7 @@ export default function Sidebar() {
         onClick={() => setCollapsed(!collapsed)}
         className="mb-6 p-2 rounded-lg hover:bg-gray-700 transition-colors"
       >
-        {collapsed ? <PanelRightOpen size={22} /> : <PanelLeftClose size={22} />}
+        {collapsed ? <Menu   size={22} /> : <PanelLeftClose size={22} />}
       </button>
 
 

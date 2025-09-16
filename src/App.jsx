@@ -8,6 +8,8 @@ import Dashboard from "./pages/DashBoard";
 import AddLeadPage from "./pages/AddLeadPage";
 import EditLeadPage from "./pages/EditLeadPage";
 import LeadDetailsPage from "./pages/LeadDetailPage";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function App() {
   return (
@@ -27,6 +29,7 @@ export default function App() {
           </Routes>
         </div>
       </div>
+         <ToastContainer position="top-right" autoClose={3000} />
     </Router>
   );
 }
